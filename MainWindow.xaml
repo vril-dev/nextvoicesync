@@ -1,0 +1,119 @@
+﻿<Window x:Class="NextVoiceSync.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:NextVoiceSync"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        mc:Ignorable="d"
+        Title="NextVoiceSync" Height="600" Width="600"
+        WindowStyle="SingleBorderWindow"
+        ResizeMode="NoResize">
+    <Grid Margin="10,0,10,10">
+        <Menu>
+            <MenuItem Header="設定">
+                <MenuItem x:Name="EnableTextLoggingMenuItem"
+                    IsCheckable="True"
+                    IsChecked="False"
+                    Checked="EnableTextLoggingMenuItem_Checked"
+                    Unchecked="EnableTextLoggingMenuItem_Checked"
+                    Header="解析結果を保存"
+                />
+
+                <MenuItem x:Name="EnableRecordingMenuItem"
+                    Header="録音を有効にする"
+                    IsCheckable="True"
+                    IsChecked="False"
+                    Checked="EnableRecordingMenuItem_Checked"
+                    Unchecked="EnableRecordingMenuItem_Checked"
+                />
+            </MenuItem>
+        </Menu>
+        <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,20,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,0">
+                <ComboBox x:Name="RecognizerComboBox" HorizontalAlignment="Left" VerticalAlignment="Top"
+                    Width="150" Height="24" SelectionChanged="RecognizerComboBox_SelectionChanged"
+                    Margin="0,0,10,0"/>
+
+                <ComboBox x:Name="MicDeviceComboBox"
+                    Width="390"
+                    Height="24"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Top"
+                    HorizontalContentAlignment="Stretch">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding DisplayName}"
+                                TextTrimming="CharacterEllipsis"
+                                TextWrapping="NoWrap"
+                                VerticalAlignment="Center"
+                                ToolTip="{Binding DisplayName}"/>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
+                <ToggleButton x:Name="ToggleCaptureButton"
+                    Content="解析開始"
+                    Width="120"
+                    Height="33"
+                    Click="ToggleCaptureButton_Click"/>
+            </StackPanel>
+
+            <Viewbox Stretch="Uniform" Width="540" MinHeight="30" MaxHeight="30" Margin="0,10,0,0">
+                <TextBlock x:Name="PartialTextBlock" Foreground="Gray" TextAlignment="Center"
+                   HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                   MaxWidth="540" Text="---" />
+            </Viewbox>
+
+            <TabControl x:Name="MainTabControl">
+                <TabItem Header="リアルタイム認識">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <ListBox x:Name="ResultListBox" Grid.Row="0" Width="530" Height="300"
+                            ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                            ScrollViewer.VerticalScrollBarVisibility="Visible">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Width="500">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="50"/>
+                                            <ColumnDefinition Width="420" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="{Binding Timestamp}" 
+                                            Foreground="Gray" Width="45" Margin="0,0,5,0"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding Message}" 
+                                            TextWrapping="Wrap"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <StackPanel Orientation="Horizontal" Grid.Row="1" HorizontalAlignment="Center">
+                            <ComboBox x:Name="PromptComboBox" Height="24" Width="300" />
+                            <Label x:Name="TokenCountLabel" Content="トークン数: 0" Width="130" />
+                            <Button x:Name="AnalyzeButton" Content="AI解析" Width="100" IsEnabled="False" Click="AnalyzeButton_Click" />
+                        </StackPanel>
+                    </Grid>
+                </TabItem>
+
+                <TabItem Header="AI解析結果">
+                    <Grid>
+                        <TextBox x:Name="AiResultBox" Width="530" Height="326" TextWrapping="Wrap"
+                            AcceptsReturn="True" VerticalScrollBarVisibility="Visible"/>
+                    </Grid>
+                </TabItem>
+            </TabControl>
+
+            <TextBox Name="LogBox" Width="550" Height="50" Margin="0,10,0,0" TextWrapping="Wrap"
+                AcceptsReturn="True" VerticalScrollBarVisibility="Auto"/>
+        </StackPanel>
+
+        <wv2:WebView2 x:Name="SpeechRecognitionWebView" Visibility="Visible" Height="0" Width="500" VerticalAlignment="Bottom"/>
+    </Grid>
+</Window>

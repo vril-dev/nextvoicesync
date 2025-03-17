@@ -1,0 +1,43 @@
+﻿# ビルド生成物
+bin/
+obj/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Visual Studioキャッシュ/設定
+.vs/
+.vscode/
+*.csproj.bak
+
+# NuGetパッケージ
+packages/
+*.nupkg
+# NuGetのロックファイルを除外したくない場合はコメントアウト
+# project.lock.json
+
+# デバッグ/リリース関連
+*.pdb
+*.exe
+*.dll
+*.cache
+
+# ログファイル
+*.log
+
+# Roslynキャッシュ
+*.ide/
+
+# その他一時ファイル
+*~
+*.swp
+*.tmp
+
+# パッケージ管理関連
+*.nuget.props
+*.nuget.targets
+
+# Unityプロジェクトの場合（必要に応じて）
+Library/
+Temp/
