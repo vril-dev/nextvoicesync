@@ -1,0 +1,77 @@
+﻿<html>
+<head>
+    <meta charset="utf-8" />
+</head>
+<body>
+    <script>
+    let recognition;
+    let audioContext;
+    let analyser;
+    let javascriptNode;
+    let finalText = '';
+    let partialText = '';
+    let isFinalProcessing = false;
+
+    console.log('SpeechRecognition:', window.SpeechRecognition || window.webkitSpeechRecognition);
+
+    function startRecognition(deviceId) {
+        recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = 'ja-JP';
+        recognition.continuous = true;
+        recognition.interimResults = true;
+
+        recognition.onresult = event => {
+            let newFinalText = '';
+            let newPartialText = '';
+
+            for (let i = 0; i < event.results.length; i++) {
+                if (event.results[i].isFinal) {
+                    newFinalText = event.results[i][0].transcript;
+                } else {
+                    newPartialText = event.results[i][0].transcript;
+                }
+            }
+
+            if (newPartialText.length > 0) {
+                console.log(`partialText=${newPartialText}`);
+                window.chrome.webview.postMessage(JSON.stringify({ type: 'partial', data: newPartialText }));
+            }
+
+            if (newFinalText.length > 0 && newFinalText !== finalText && !isFinalProcessing) {
+                window.chrome.webview.postMessage(JSON.stringify({ type: 'result', data: newFinalText }));
+
+                isFinalProcessing = true;
+                finalText = newFinalText;
+            }
+        };
+
+        recognition.onerror = event => {
+            console.error(`SpeechRecognition エラー: ${event.error}`);
+        };
+
+        recognition.onend = (a, event) => {
+            recognition.start();
+        };
+
+        recognition.start();
+    }
+
+    function onWebMessageProcessed(type) {
+        if (type === 'result') {
+            console.log(`onWebMessageProcessed ${type}`);
+            isFinalProcessing = false;
+        }
+    }
+
+    function stopRecognition() {
+        if (recognition) {
+            recognition.onend = null;
+            recognition.stop();
+        }
+        if (audioContext) {
+            audioContext.close();
+        }
+    }
+    </script>
+</body>
+</html>

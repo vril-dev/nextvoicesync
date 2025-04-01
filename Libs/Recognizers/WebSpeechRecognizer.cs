@@ -1,8 +1,10 @@
 ﻿using System.IO;
 using System.Text.Json;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
 using NAudio.CoreAudioApi;
+using NextVoiceSync.Libs.Server;
 using static Google.Protobuf.Reflection.SourceCodeInfo.Types;
 
 namespace NextVoiceSync.Libs.Recognizers
@@ -50,13 +52,30 @@ namespace NextVoiceSync.Libs.Recognizers
         public Action<string> AppendLog { get; set; } = message => { };
 
         /// <summary>
+        /// HTTPサーバ
+        /// </summary>
+        private SimpleHttpServer server;
+
+        /// <summary>
+        /// ローカルサーバ使用有無
+        /// </summary>
+        private bool useLocalServer;
+
+        /// <summary>
+        /// サーバURL
+        /// </summary>
+        private string serverUrl;
+
+        /// <summary>
         /// WebSpeechRecognizerのコンストラクタ。
         /// WebView2を初期化し、設定を行う。
         /// </summary>
-        public WebSpeechRecognizer(WebView2 webView)
+        public WebSpeechRecognizer(WebView2 webView, IConfiguration configuration)
         {
             this.webView = webView ?? throw new ArgumentNullException(nameof(webView));
-            userDataFolder = GetUserDataFolder();
+            this.userDataFolder = configuration.GetValue<string>("WebView2:UserDataFolder", string.Empty);
+            this.useLocalServer = configuration.GetValue<bool>("UseLocalServer", true);
+            this.serverUrl = configuration.GetValue<string>("WebServer:ServerUrl", "http://localhost:3800");
 
             InitializeWebView();
         }
@@ -66,35 +85,38 @@ namespace NextVoiceSync.Libs.Recognizers
         /// </summary>
         private string GetUserDataFolder()
         {
-            try
+            if (string.IsNullOrWhiteSpace(userDataFolder))
             {
-                string appFolder = AppDomain.CurrentDomain.BaseDirectory;
-                string configPath = Path.Combine(appFolder, "appsettings.json");
-
-                if (File.Exists(configPath))
-                {
-                    string json = File.ReadAllText(configPath);
-                    using var doc = JsonDocument.Parse(json);
-                    var root = doc.RootElement;
-
-                    if (root.TryGetProperty("WebView2", out JsonElement webViewConfig) &&
-                        webViewConfig.TryGetProperty("UserDataFolder", out JsonElement userDataPath))
-                    {
-                        string path = userDataPath.GetString();
-
-                        if (!string.IsNullOrWhiteSpace(path))
-                        {
-                            return path;
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                AppendLog("ERROR: appsettings.json の読み込みに失敗: " + ex.Message);
+                // デフォルトのフォルダを使用
+                userDataFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WebView2Data");
             }
 
-            return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WebView2Data");
+            return userDataFolder;
+        }
+
+        /// <summary>
+        /// htmlファイルを取得
+        /// </summary>
+        private string GetHtmlFilePath()
+        {
+            string appFolder = AppDomain.CurrentDomain.BaseDirectory;
+            string htmlFilePath = Path.Combine(appFolder, "Resources", "index.html");
+
+            if (!File.Exists(htmlFilePath))
+            {
+                AppendLog($"ERROR: HTML ファイルが見つかりません: {htmlFilePath}");
+            }
+
+            return htmlFilePath;
+        }
+
+        /// <summary>
+        /// 簡易WEBサーバを起動
+        /// </summary>
+        private void StartLocalHttpServer(string htmlFilePath)
+        {
+            server = new SimpleHttpServer(htmlFilePath, serverUrl);
+            server.Start();
         }
 
         /// <summary>
@@ -102,10 +124,19 @@ namespace NextVoiceSync.Libs.Recognizers
         /// </summary>
         private async void InitializeWebView()
         {
+            if (useLocalServer)
+            {
+                string htmlFilePath = GetHtmlFilePath();
+                StartLocalHttpServer(htmlFilePath);
+            }
+
             var env = await CoreWebView2Environment.CreateAsync(
-                userDataFolder: userDataFolder,
-                options: new CoreWebView2EnvironmentOptions("--disable-web-security --use-fake-ui-for-media-stream")
+                userDataFolder: GetUserDataFolder(),
+                options: new CoreWebView2EnvironmentOptions(
+                    $"--disable-web-security --use-fake-ui-for-media-stream --unsafely-treat-insecure-origin-as-secure={serverUrl}"
+                )
             );
+
             await webView.EnsureCoreWebView2Async(env);
 
             if (webView.CoreWebView2 != null)
@@ -124,80 +155,12 @@ namespace NextVoiceSync.Libs.Recognizers
                 };
 
                 webView.CoreWebView2.WebMessageReceived += WebMessageReceived;
+                webView.CoreWebView2.Navigate(serverUrl);
             }
-
-            webView.CoreWebView2.NavigateToString(@"
-                <html>
-                    <script>
-                        let recognition;
-                        let audioContext;
-                        let analyser;
-                        let javascriptNode;
-                        let finalText = '';
-                        let partialText = '';
-                        let isFinalProcessing = false;
-
-                        function startRecognition(deviceId) {
-                            recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-                            recognition.lang = 'ja-JP';
-                            recognition.continuous = true;
-                            recognition.interimResults = true;
-
-                            recognition.onresult = event => {
-                                let newFinalText = '';
-                                let newPartialText = '';
-
-                                for (let i = 0; i < event.results.length; i++) {
-                                    if (event.results[i].isFinal) {
-                                        newFinalText = event.results[i][0].transcript;
-                                    } else {
-                                        newPartialText = event.results[i][0].transcript;
-                                    }
-                                }
-
-                                if (newPartialText.length > 0) {
-                                    console.log(`partialText=${newPartialText}`);
-                                    window.chrome.webview.postMessage(JSON.stringify({ type: 'partial', data: newPartialText }));
-                                }
-
-                                if (newFinalText.length > 0 && newFinalText !== finalText && !isFinalProcessing) {
-                                    window.chrome.webview.postMessage(JSON.stringify({ type: 'result', data: newFinalText }));
-
-                                    isFinalProcessing = true;
-                                    finalText = newFinalText;
-                                }
-                            };
-
-                            recognition.onerror = event => {
-                                //
-                            };
-
-                            recognition.onend = () => {
-                                recognition.start();
-                            };
-
-                            recognition.start();
-                        }
-
-                        function onWebMessageProcessed(type) {
-                            if (type === 'result') {
-                                console.log(`onWebMessageProcessed ${type}`);
-                                isFinalProcessing = false;
-                            }
-                        }
-
-                        function stopRecognition() {
-                            if (recognition) {
-                                recognition.onend = null;
-                                recognition.stop();
-                            }
-                            if (audioContext) {
-                                audioContext.close();
-                            }
-                        }
-                    </script>
-                </html>
-            ");
+            else
+            {
+                AppendLog("ERROR: WebView2 の初期化に失敗しました。");
+            }
         }
 
         /// <summary>

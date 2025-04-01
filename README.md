@@ -4,13 +4,18 @@
 
 ---
 
-## 概要
+## 📚 概要
 
-NexVoiceSync は、PCの音声（ループバックまたはマイク）をキャプチャし、リアルタイムでテキスト化することを主目的とするアプリケーションです。さらに、テキスト化した音声データをAIを活用して解析する機能を備えており、会議の要約やキーワード抽出、議事録作成などを効率化できます。
+NexVoiceSync は、PCの音声（ループバックまたはマイク）をキャプチャし、リアルタイムでテキスト化することを主目的とするアプリケーションです。  
+さらに、テキスト化した音声データを AI を活用して解析する機能を備えており、  
+会議の要約やキーワード抽出、議事録作成などを効率化できます。
 
-NexVoiceSync は、会議やオンラインミーティングなどの音声をリアルタイムに認識・テキスト化するためのツールです。ユーザーは任意のタイミングで音声解析を開始・停止したり、解析内容のプロンプトを自由に設定することができます。
+NexVoiceSync は、会議やオンラインミーティングなどの音声をリアルタイムに認識・テキスト化するためのツールです。  
+ユーザーは任意のタイミングで音声解析を開始・停止したり、解析内容のプロンプトを自由に設定することができます。
 
-## 機能
+---
+
+## ⚙️ 機能
 
 - **リアルタイム音声キャプチャ**
   - システム音声（ループバック）またはマイク入力をキャプチャ
@@ -33,12 +38,16 @@ NexVoiceSync は、会議やオンラインミーティングなどの音声を�
   - 音声入力ソースおよびマイクデバイス選択可能
   - プロンプトの自由設定（カスタム解析が可能）
 
-## 動作環境
+---
+
+## 🌐 動作環境
 
 - Windows 10 / Windows 11
 - .NET 6.0 以上
 
-## 使用技術
+---
+
+## ⚙️ 使用技術
 
 - C# (.NET)
 - WPF（UIフレームワーク）
@@ -48,9 +57,9 @@ NexVoiceSync は、会議やオンラインミーティングなどの音声を�
 - OpenAI / Grok / Gemini API（AI解析）
 - **Microsoft.ML.Tokenizers（トークンカウント）**
 
-## インストールと実行
+---
 
-### 必要ライブラリ
+## 📦 必要ライブラリ
 
 - NAudio
 - Vosk
@@ -68,10 +77,12 @@ Install-Package Google.Cloud.Speech.V1
 Install-Package Microsoft.Web.WebView2.Wpf
 Install-Package System.Net.Http
 Install-Package System.Text.Json
-Install-Package Microsoft.ML.Tokenizers
+Install-Package Microsoft.ML.Tokenizers -Version 0.22.0-preview.24179.1
 ```
 
-### セットアップ手順
+---
+
+## 🛠️ セットアップ手順
 
 1. リポジトリをクローン
 
@@ -138,18 +149,141 @@ dotnet restore
 dotnet run
 ```
 
-## 推奨設定
+---
+
+## ⚙️ Web サーバーの設定
+
+`appsettings.json` で `WebServer` セクションを編集することで、  
+ローカルサーバー (`http://localhost`) または外部 API に接続できます。
+
+```json
+{
+  "WebServer": {
+    "UseLocalServer": true,               // true: ローカルサーバー, false: 外部API
+    "ServerUrl": "http://localhost:3800/" // 使用するサーバーの URL
+  }
+}
+```
+
+### 📢 `UseLocalServer` の説明
+- `true` → ローカルサーバー (`SimpleHttpServer`) を `ServerUrl` で指定された URL で起動。
+- `false` → `ServerUrl` に指定された **外部 API URL** に接続。
+
+---
+
+## 🌐 WebView2 の設定
+
+`appsettings.json` で `WebView2` セクションを編集することで、  
+WebView2 のユーザーデータフォルダの場所を指定できます。
+
+```json
+{
+  "WebView2": {
+    "UserDataFolder": "C:\\NextVoiceSync\\WebView2Data"
+  }
+}
+```
+
+### 📢 `UserDataFolder` の説明
+- **`UserDataFolder`** → WebView2 のユーザーデータを保存するフォルダの場所を指定。  
+- 設定されていない場合は、`WebView2Data` というデフォルトフォルダが使用されます。
+
+---
+
+## 📂 index.html の配置
+
+ローカルサーバーを使用する場合、  
+`Resources/index.html` に HTML ファイルを配置してください。
+
+`index.html` は WebView2 で読み込まれるため、  
+正しい場所にファイルが存在しない場合は **404 エラー** になります。
+
+```bash
+/NextVoiceSync/
+├── /Libs/
+│   ├── /Recognizers/
+│   └── /Server/
+├── /Resources/
+│   └── index.html
+└── /appsettings.json
+```
+
+---
+
+## 📝 appsettings.json のサンプル
+
+```json
+{
+  "WebServer": {
+    "UseLocalServer": true,
+    "ServerUrl": "http://localhost:3800/"
+  },
+  "WebView2": {
+    "UserDataFolder": "C:\\NextVoiceSync\\WebView2Data"
+  },
+  "VoskSettings": {
+    "ModelPath": "config/vosk-model-ja-0.22"
+  },
+  "GoogleCloud": {
+    "ApiKeyPath": "config/google-cloud-key.json"
+  },
+  "AISettings": {
+    "DefaultProvider": "OpenAI",
+    "Providers": {
+      "OpenAI": {
+        "ApiKeyPath": "config/openai-key.txt",
+        "Endpoint": "https://api.openai.com/v1/chat/completions"
+      }
+    }
+  }
+}
+```
+
+---
+
+## 🚀 使用方法
+
+1. `appsettings.json` を編集して、`ServerUrl` や `WebView2` の設定を更新します。
+2. `index.html` を `Resources` フォルダに配置します。
+3. Visual Studio で `NextVoiceSync.sln` を開き、ビルドして実行します。
+
+---
+
+## 💡 推奨設定
 
 - **会議での使用には、ループバックを利用し、Google Cloud Speech-to-Textを推奨します。**
 
-## 今後の展望
+---
+
+## 🎯 今後の展望
 
 - **AI解析機能の拡張**
   - 複数話者対応
   - 解析結果のフォーマットオプション追加（要約、リスト表示など）
   - **Grok や Gemini の統合（開発予定）**
 
-## ライセンス
+---
 
-本プロジェクトは MIT ライセンスの下で公開されています。詳細は [LICENSE](LICENSE) を参照してください。
+## 📄 ライセンス
 
+本プロジェクトは MIT ライセンスの下で公開されています。  
+詳細は [LICENSE](LICENSE) を参照してください。
+
+---
+
+## [1.0.1] - 2025-03-31
+### 追加
+- `WebSpeechRecognizer` で `GetUserDataFolder()` を `IConfiguration` から取得可能に修正。
+- `appsettings.json` で `WebView2:UserDataFolder` を動的に指定可能。
+- `SimpleHttpServer` から `port` 引数を削除し、`ServerUrl` で URL を管理。
+- `MainWindow.xaml.cs` で `WebSpeechRecognizer` に `IConfiguration` を DI で注入。
+- `appsettings.json` で `ServerUrl` にポート込みの URL を直接指定可能。
+- `UseLocalServer` が `false` の場合は `ServerUrl` に外部 API を指定可能。
+- `設定` メニューに「アプリケーションフォルダを開く」項目を追加。
+
+### 修正
+- `SimpleHttpServer` で `port` を削除して `BaseUrl` に一本化。
+- `WebView2` の初期化エラーを回避するための `UserDataFolder` の動的設定追加。
+
+### 互換性
+- `Microsoft.ML.Tokenizers` のバージョンを `0.22.0-preview.24179.1` に固定。

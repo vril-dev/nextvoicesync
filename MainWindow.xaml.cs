@@ -291,6 +291,8 @@ public partial class MainWindow : Window
                 .AddSingleton<IConfiguration>(configuration)
                 .AddSingleton<VoskSpeechRecognizer>()
                 .AddSingleton<GoogleCloudSpeechRecognizer>()
+                .AddSingleton<WebSpeechRecognizer>(provider =>
+                    new WebSpeechRecognizer(SpeechRecognitionWebView, provider.GetRequiredService<IConfiguration>()))
                 .BuildServiceProvider();
         }
 
@@ -299,7 +301,7 @@ public partial class MainWindow : Window
             case RecognizerType.WebSpeechAPI:
                 if (webSpeechRecognizer == null)
                 {
-                    webSpeechRecognizer = new WebSpeechRecognizer(SpeechRecognitionWebView);
+                    webSpeechRecognizer = serviceProvider.GetRequiredService<WebSpeechRecognizer>();
                 }
 
                 recognizer = webSpeechRecognizer;
@@ -551,6 +553,31 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             MessageBox.Show($"エラー: {ex.Message}", "解析エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    /// <summary>
+    /// アプリケーションフォルダを開くメニュー項目のクリックイベント
+    /// </summary>
+    private void OpenAppFolderMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            string appFolderPath = AppDomain.CurrentDomain.BaseDirectory;
+
+            if (Directory.Exists(appFolderPath))
+            {
+                System.Diagnostics.Process.Start("explorer.exe", appFolderPath);
+                AppendLog($"アプリケーションフォルダを開きました: {appFolderPath}");
+            }
+            else
+            {
+                MessageBox.Show("アプリケーションフォルダが見つかりません。", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            AppendLog($"アプリケーションフォルダのオープンに失敗: {ex.Message}");
         }
     }
 

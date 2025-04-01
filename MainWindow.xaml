@@ -27,6 +27,12 @@
                     Checked="EnableRecordingMenuItem_Checked"
                     Unchecked="EnableRecordingMenuItem_Checked"
                 />
+
+                <Separator />
+
+                <MenuItem Header="アプリケーションフォルダを開く"
+                    Click="OpenAppFolderMenuItem_Click"
+                />
             </MenuItem>
         </Menu>
         <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,20,0,0">
