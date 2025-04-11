@@ -8,18 +8,28 @@ using System.Threading.Tasks;
 
 namespace NextVoiceSync.Libs.Server
 {
+    /// <summary>
+    /// 指定された HTML ファイルをローカル HTTP サーバーで配信する軽量なサーバークラス。
+    /// WebView2 などからのローカルアクセス用途を想定。
+    /// </summary>
     class SimpleHttpServer
     {
         private readonly string htmlFilePath;
         private readonly string hostUrl;
         private HttpListener listener;
 
+        /// <summary>
+        /// HTMLファイルパスとホストURLを指定してインスタンスを初期化する。
+        /// </summary>
         public SimpleHttpServer(string htmlFilePath, string hostUrl)
         {
             this.htmlFilePath = htmlFilePath;
             this.hostUrl = hostUrl;
         }
 
+        /// <summary>
+        /// HTTPサーバーを開始し、指定されたURLでリクエストを待機する。
+        /// </summary>
         public void Start()
         {
             listener = new HttpListener();
@@ -29,6 +39,9 @@ namespace NextVoiceSync.Libs.Server
             Task.Run(() => Listen());
         }
 
+        /// <summary>
+        /// 非同期でクライアントからの接続を待ち受け、HTMLを返す。
+        /// </summary>
         private async Task Listen()
         {
             while (listener.IsListening)
@@ -46,6 +59,9 @@ namespace NextVoiceSync.Libs.Server
             }
         }
 
+        /// <summary>
+        /// HTTPサーバーを停止する。
+        /// </summary>
         public void Stop()
         {
             listener.Stop();

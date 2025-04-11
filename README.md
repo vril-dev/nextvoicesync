@@ -271,6 +271,18 @@ WebView2 のユーザーデータフォルダの場所を指定できます。
 
 ---
 
+## [1.0.2] - 2025-04-07
+
+### 追加
+- Whisper (whisper.cpp) を使用した **録音後の音声ファイル解析機能** を追加。
+- メニューバーに「音声ファイル解析」メニューを新設。録音済み `.wav` ファイルを選択し、`whisper-cli.exe` による解析を実行可能。
+- `Libs/PostAnalysis/WhisperService.cs` を新設し、`IPostAnalysisService` インターフェースにより拡張性を確保。
+- 解析結果は `.wav` ファイルと同じディレクトリに `.txt` 形式で自動保存される。
+- `appsettings.json` に `"PostAnalysis:Whisper"` セクションを追加。
+
+### その他
+- 設定構成とログ出力の簡素化、および UI 側の状態管理を調整。
+
 ## [1.0.1] - 2025-03-31
 ### 追加
 - `WebSpeechRecognizer` で `GetUserDataFolder()` を `IConfiguration` から取得可能に修正。

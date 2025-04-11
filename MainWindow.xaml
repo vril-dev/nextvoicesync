@@ -34,6 +34,11 @@
                     Click="OpenAppFolderMenuItem_Click"
                 />
             </MenuItem>
+
+            <MenuItem x:Name="PostAnalyzeMenuItem"
+                Header="音声ファイル解析"
+                Click="PostAnalyzeMenuItem_Click"
+            />
         </Menu>
         <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,20,0,0">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,0">

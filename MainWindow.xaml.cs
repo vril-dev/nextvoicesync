@@ -14,6 +14,7 @@ using NextVoiceSync.Libs.Models;
 using NextVoiceSync.Libs.Recognizers;
 using System.Windows.Threading;
 using System.Windows.Documents;
+using NextVoiceSync.Libs.PostAnalysis;
 
 namespace NextVoiceSync;
 
@@ -98,6 +99,11 @@ public partial class MainWindow : Window
     private ObservableCollection<RecognizedTextItem> recognizedTextItems = new ObservableCollection<RecognizedTextItem>();
 
     /// <summary>
+    /// WhisperService
+    /// </summary>
+    private WhisperService whisperService;
+
+    /// <summary>
     /// MainWindow のコンストラクタ。
     /// 初期化処理を実行し、音声認識イベントを設定する。
     /// </summary>
@@ -107,6 +113,8 @@ public partial class MainWindow : Window
         InitializeComponent();
         aiAnalyzer = new AiAnalyzer(configuration);
         aiAnalyzer.AppendLog = AppendLog;
+        whisperService = new WhisperService(configuration);
+        whisperService.AppendLog = AppendLog;
         InitializeRecorder();
         LoadMicrophoneList();
         InitializeRecognizerDropdown();
@@ -582,6 +590,59 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
+    /// 「音声ファイル解析」メニュー項目のクリックイベント。
+    /// 録音済みのWAVファイルを選択し、Whisperで認識・保存処理を行う。
+    /// </summary>
+    private async void PostAnalyzeMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (!PostAnalyzeMenuItem.IsEnabled)
+        {
+            return;
+        }
+
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "解析する音声ファイルを選択",
+            Filter = "WAVファイル (*.wav)|*.wav",
+            InitialDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data")
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            string filePath = dialog.FileName;
+            AppendLog($"[Whisper] 音声ファイルを選択: {filePath}");
+
+            PostAnalyzeMenuItem.IsEnabled = false;
+
+            try
+            {
+                string result = await whisperService.AnalyzeAsync(filePath);
+                AppendLog("[Whisper] 認識結果:");
+
+                string outputPath = Path.Combine(
+                    Path.GetDirectoryName(filePath),
+                    Path.GetFileNameWithoutExtension(filePath) + ".txt"
+                );
+
+                File.WriteAllText(outputPath, result, Encoding.UTF8);
+                AppendLog($"[Whisper] 認識結果を保存: {outputPath}");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"解析中にエラーが発生しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                PostAnalyzeMenuItem.IsEnabled = true;
+            }
+        }
+        else
+        {
+            AppendLog("[Whisper] ファイル選択がキャンセルされました");
+        }
+    }
+
+    /// <summary>
     /// 認識された最終的なテキストをUIに表示する。
     /// </summary>
     private void UpdateRecognizedText(string text)
@@ -630,7 +691,7 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// 録音を開始
+    /// 録音を開始し、必要に応じて解析ログファイルを初期化する
     /// </summary>
     private async void StartRecording()
     {
@@ -656,7 +717,7 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// 音声認識停止時に録音停止
+    /// 録音を停止する
     /// </summary>
     private async void StopRecording()
     {
