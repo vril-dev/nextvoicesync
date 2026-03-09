@@ -26,6 +26,9 @@ packages/
 # ログファイル
 *.log
 
+# publish成果物
+artifacts/
+
 # Roslynキャッシュ
 *.ide/
 

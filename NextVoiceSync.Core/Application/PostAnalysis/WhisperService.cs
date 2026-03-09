@@ -13,7 +13,7 @@ namespace NextVoiceSync.Application.PostAnalysis
     /// whisper-cli.exe を使用して録音済み音声ファイルを解析する非同期サービス。
     /// PostAnalysis 処理の一部として利用される。
     /// </summary>
-    class WhisperService : IPostAnalysisService
+    public class WhisperService : IPostAnalysisService
     {
         /// <summary>
         /// アプリケーションの設定情報を保持する構成オブジェクト。

@@ -10,6 +10,14 @@ Pure models and business-friendly data structures.
 - `Infrastructure`
 External integrations and adapters (audio capture, recognizers, AI provider, HTTP server).
 
+## Project Split
+- `NextVoiceSync` (`net8.0-windows`)
+Windows GUI application (WPF).
+- `NextVoiceSync.Core` (`net8.0`)
+Cross-platform reusable domain/application/infrastructure (except Windows-only adapters).
+- `NextVoiceSync.Cli` (`net8.0`)
+Cross-platform CLI entrypoint that consumes `NextVoiceSync.Core`.
+
 ## Dependency Direction
 - `Presentation` -> `Application`, `Domain`, `Infrastructure`
 - `Application` -> `Domain`, `Infrastructure`
@@ -19,19 +27,19 @@ External integrations and adapters (audio capture, recognizers, AI provider, HTT
 ## Current Mapping
 - `Presentation/Windows`
 Window XAML and UI event handlers.
-- `Application/Ai`
+- `NextVoiceSync.Core/Application/Ai`
 AI analysis coordinator and provider abstractions.
-- `Application/PostAnalysis`
+- `NextVoiceSync.Core/Application/PostAnalysis`
 Post-processing service interfaces and implementation.
-- `Application/Validation`
+- `NextVoiceSync.Core/Application/Validation`
 Runtime validation for recognizer configuration.
-- `Domain/Models`
+- `NextVoiceSync.Core/Domain/Models`
 Recognized text item model.
 - `Infrastructure/Audio`
 Recorder and device wrappers.
 - `Infrastructure/Recognizers`
 Vosk, Google STT, Web Speech adapters and recognizer interfaces.
-- `Infrastructure/Ai`
+- `NextVoiceSync.Core/Infrastructure/Ai`
 OpenAI provider implementation.
 - `Infrastructure/Server`
 Local HTTP server for Web Speech bridge.
