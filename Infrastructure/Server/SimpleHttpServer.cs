@@ -6,7 +6,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NextVoiceSync.Libs.Server
+namespace NextVoiceSync.Infrastructure.Server
 {
     /// <summary>
     /// 指定された HTML ファイルをローカル HTTP サーバーで配信する軽量なサーバークラス。

@@ -43,7 +43,7 @@
         <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,20,0,0">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,0">
                 <ComboBox x:Name="RecognizerComboBox" HorizontalAlignment="Left" VerticalAlignment="Top"
-                    Width="150" Height="24" SelectionChanged="RecognizerComboBox_SelectionChanged"
+                    Width="150" Height="24"
                     Margin="0,0,10,0"/>
 
                 <ComboBox x:Name="MicDeviceComboBox"

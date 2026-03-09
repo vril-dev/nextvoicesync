@@ -2,7 +2,7 @@
 using System.IO;
 using Microsoft.Extensions.Configuration;
 
-namespace NextVoiceSync.Libs.Validators
+namespace NextVoiceSync.Application.Validation
 {
     /// <summary>
     /// 音声認識エンジンの設定を検証するユーティリティクラス。

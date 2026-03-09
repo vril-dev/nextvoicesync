@@ -4,10 +4,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
 using NAudio.CoreAudioApi;
-using NextVoiceSync.Libs.Server;
-using static Google.Protobuf.Reflection.SourceCodeInfo.Types;
+using NextVoiceSync.Infrastructure.Server;
 
-namespace NextVoiceSync.Libs.Recognizers
+namespace NextVoiceSync.Infrastructure.Recognizers
 {
     /// <summary>
     /// Web Speech API を使用した音声認識クラス。
@@ -74,7 +73,7 @@ namespace NextVoiceSync.Libs.Recognizers
         {
             this.webView = webView ?? throw new ArgumentNullException(nameof(webView));
             this.userDataFolder = configuration.GetValue<string>("WebView2:UserDataFolder", string.Empty);
-            this.useLocalServer = configuration.GetValue<bool>("UseLocalServer", true);
+            this.useLocalServer = configuration.GetValue<bool>("WebServer:UseLocalServer", true);
             this.serverUrl = configuration.GetValue<string>("WebServer:ServerUrl", "http://localhost:3800");
 
             InitializeWebView();

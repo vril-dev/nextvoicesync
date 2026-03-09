@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NextVoiceSync.Libs.Ai
+namespace NextVoiceSync.Application.Ai
 {
     /// <summary>
     /// AI プロバイダーのインターフェース。

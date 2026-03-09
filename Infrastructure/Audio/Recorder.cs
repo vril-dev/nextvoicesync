@@ -2,7 +2,7 @@
 using System.IO;
 using NAudio.Wave;
 
-namespace NextVoiceSync.Libs.Audio
+namespace NextVoiceSync.Infrastructure.Audio
 {
     /// <summary>
     /// 音声の録音処理を担当するクラス。
@@ -91,10 +91,15 @@ namespace NextVoiceSync.Libs.Audio
         /// <summary>
         /// ディレクトリ存在を保証する。
         /// </summary>
-        private string EnsureDirectoryExists(string path)
+        private static string EnsureDirectoryExists(string path)
         {
-            var fullPath = Path.IsPathRooted(path: path)
-                ? savePath
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                path = "data";
+            }
+
+            var fullPath = Path.IsPathRooted(path)
+                ? path
                 : Path.Combine(AppContext.BaseDirectory, path);
 
             if (!Directory.Exists(fullPath))
@@ -121,18 +126,6 @@ namespace NextVoiceSync.Libs.Audio
         private void OnDataAvailable(object sender, WaveInEventArgs e)
         {
             waveWriter?.Write(e.Buffer, 0, e.BytesRecorded);
-        }
-
-        /// <summary>
-        /// 録音停止時にリソースを解放するイベントハンドラ。
-        /// </summary>
-        private void waveIn_RecordingStopped(object sender, StoppedEventArgs e)
-        {
-            waveWriter?.Dispose();
-            waveWriter = null;
-
-            waveIn?.Dispose();
-            waveIn = null;
         }
     }
 }

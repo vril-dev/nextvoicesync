@@ -5,7 +5,7 @@ using NAudio.CoreAudioApi;
 using Vosk;
 using Microsoft.Extensions.Configuration;
 
-namespace NextVoiceSync.Libs.Recognizers
+namespace NextVoiceSync.Infrastructure.Recognizers
 {
     /// <summary>
     /// Vosk を使用した音声認識を担当するクラス。
