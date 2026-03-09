@@ -9,7 +9,7 @@ namespace NextVoiceSync.Application.Ai
     /// <summary>
     /// AI プロバイダーを管理し、テキスト解析を実行するクラス。
     /// </summary>
-    class AiAnalyzer
+    public class AiAnalyzer
     {
         /// <summary>
         /// 使用する AI プロバイダーのインスタンス。
