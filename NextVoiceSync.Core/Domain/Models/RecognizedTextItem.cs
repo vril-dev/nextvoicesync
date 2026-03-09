@@ -9,7 +9,7 @@ namespace NextVoiceSync.Domain.Models
     /// <summary>
     /// 音声認識結果のデータモデル
     /// </summary>
-    class RecognizedTextItem
+    public class RecognizedTextItem
     {
         /// <summary>
         /// 音声が認識された時間（HH:mm:ss 形式の文字列）。

@@ -8,7 +8,7 @@ namespace NextVoiceSync.Application.Validation
     /// 音声認識エンジンの設定を検証するユーティリティクラス。
     /// Vosk のモデルパスと Google Speech-to-Text の API キーファイルをチェックする。
     /// </summary>
-    class RecognizerValidator
+    public static class RecognizerValidator
     {
         /// <summary>
         /// Vosk の音声認識モデルが設定されているか確認する。
