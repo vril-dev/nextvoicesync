@@ -7,14 +7,12 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.ML.Tokenizers;
 using NAudio.CoreAudioApi;
-using NextVoiceSync.Libs.Audio;
-using NextVoiceSync.Libs.Validators;
-using NextVoiceSync.Libs.Ai;
-using NextVoiceSync.Libs.Models;
-using NextVoiceSync.Libs.Recognizers;
-using System.Windows.Threading;
-using System.Windows.Documents;
-using NextVoiceSync.Libs.PostAnalysis;
+using NextVoiceSync.Infrastructure.Audio;
+using NextVoiceSync.Application.Validation;
+using NextVoiceSync.Application.Ai;
+using NextVoiceSync.Domain.Models;
+using NextVoiceSync.Infrastructure.Recognizers;
+using NextVoiceSync.Application.PostAnalysis;
 
 namespace NextVoiceSync;
 
@@ -83,11 +81,6 @@ public partial class MainWindow : Window
     private bool isTextLoggingEnabled;
 
     /// <summary>
-    /// 解析結果のログファイルパス
-    /// </summary>
-    private string analysisLogFilePath;
-
-    /// <summary>
     /// AI解析エンジンの管理を行うインスタンス。
     /// </summary>
     private AiAnalyzer aiAnalyzer;
@@ -116,7 +109,6 @@ public partial class MainWindow : Window
         whisperService = new WhisperService(configuration);
         whisperService.AppendLog = AppendLog;
         InitializeRecorder();
-        LoadMicrophoneList();
         InitializeRecognizerDropdown();
         LoadPrompts();
         ResultListBox.ItemsSource = recognizedTextItems;
@@ -171,8 +163,8 @@ public partial class MainWindow : Window
         RecognizerComboBox.Items.Add("Web Speech API");
         RecognizerComboBox.Items.Add("Vosk");
         RecognizerComboBox.Items.Add("Google Speech-to-Text");
-        RecognizerComboBox.SelectedIndex = 0;
         RecognizerComboBox.SelectionChanged += RecognizerComboBox_SelectionChanged;
+        RecognizerComboBox.SelectedIndex = 0;
     }
 
     /// <summary>
@@ -180,7 +172,7 @@ public partial class MainWindow : Window
     /// </summary>
     private void LoadMicrophoneList()
     {
-        var enumerator = new MMDeviceEnumerator();
+        using var enumerator = new MMDeviceEnumerator();
         var devices = enumerator.EnumerateAudioEndPoints(DataFlow.Capture, DeviceState.Active).ToList();
         var deviceItems = devices.Select(d => new MMDeviceWrapper(d, d.FriendlyName)).ToList();
         var loopbackItem = new MMDeviceWrapper(null, "ループバック入力");
@@ -413,95 +405,37 @@ public partial class MainWindow : Window
     /// </summary>
     private async void ToggleCaptureButton_Click(object sender, RoutedEventArgs e)
     {
-        bool isToggled = ToggleCaptureButton.IsChecked ?? false;
-
-        if (isToggled)
+        try
         {
-            AppendLog("音声キャプチャ開始");
-            ToggleCaptureButton.Content = "解析停止";
-            recognizedTextItems.Clear();
-            TokenCountLabel.Content = "トークン数: 0";
-            PartialTextBlock.Text = "(音声認識中...)";
-            AiResultBox.Text = "";
-
-            RecognizerComboBox.IsEnabled = false;
-            MicDeviceComboBox.IsEnabled = false;
-
-            var selectedWrapper = (MMDeviceWrapper)MicDeviceComboBox.SelectedItem;
-
-            if (selectedWrapper.Device == null)
+            if (ToggleCaptureButton.IsChecked == true)
             {
-                recognizer.InputSource = CaptureSource.Loopback;
-                recognizer.SelectedMicrophone = null;
+                await StartCaptureSessionAsync();
             }
             else
             {
-                recognizer.InputSource = CaptureSource.Microphone;
-                recognizer.SelectedMicrophone = selectedWrapper.Device;
-            }
-
-            string saveDirectory = configuration["RecordingSettings:SavePath"];
-            string analysisFilePath = Path.Combine(saveDirectory, "analysis.txt");
-
-            if (File.Exists(analysisFilePath))
-            {
-                try
-                {
-                    File.Delete(analysisFilePath);
-                }
-                catch (Exception ex)
-                {
-                    AppendLog($"開始時の analysis.txt 削除エラー: {ex.Message}");
-                }
-            }
-
-            await recognizer.StartCaptureAsync();
-
-            if (isRecordingEnabled)
-            {
-                StartRecording();
+                await StopCaptureSessionAsync();
             }
         }
-        else
+        catch (Exception ex)
         {
-            AppendLog("音声キャプチャ停止");
-            ToggleCaptureButton.Content = "解析開始";
-            PartialTextBlock.Text = "---";
+            AppendLog($"キャプチャ制御エラー: {ex.Message}");
 
-            RecognizerComboBox.IsEnabled = true;
-            MicDeviceComboBox.IsEnabled = true;
-
-            await recognizer.StopCaptureAsync();
-
-            if (isRecordingEnabled)
+            if (recognizer != null)
             {
-                StopRecording();
-            }
-
-            if (isTextLoggingEnabled)
-            {
-                string saveDirectory = configuration["RecordingSettings:SavePath"];
-                string analysisFilePath = Path.Combine(saveDirectory, "analysis.txt");
-                string formattedFilePath = Path.Combine(saveDirectory, $"analysis_{DateTime.Now:yyyyMMdd-HHmmss}.txt");
-
                 try
                 {
-                    if (File.Exists(analysisFilePath))
-                    {
-                        string content = File.ReadAllText(analysisFilePath);
-
-                        using (StreamWriter sw = new StreamWriter(formattedFilePath, false, Encoding.UTF8))
-                        {
-                            sw.WriteLine(content);
-                            AppendLog($"{formattedFilePath} に保存しました");
-                        }
-                    }
+                    await recognizer.StopCaptureAsync();
                 }
-                catch (Exception ex)
+                catch (Exception stopEx)
                 {
-                    AppendLog($"解析ログフォーマットエラー: {ex.Message}");
+                    AppendLog($"キャプチャ停止の復旧処理で失敗: {stopEx.Message}");
                 }
             }
+
+            StopRecordingIfEnabled();
+            MessageBox.Show($"音声キャプチャの制御に失敗しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+            SetCaptureUiState(isCapturing: false);
+            ToggleCaptureButton.IsChecked = false;
         }
     }
 
@@ -659,19 +593,7 @@ public partial class MainWindow : Window
                 });
                 ResultListBox.ScrollIntoView(recognizedTextItems.Last());
                 UpdateTokenCount();
-
-                string analysisFilePath = Path.Combine(configuration["RecordingSettings:SavePath"], "analysis.txt");
-                try
-                {
-                    using (StreamWriter sw = new StreamWriter(analysisFilePath, true, Encoding.UTF8))
-                    {
-                        sw.WriteLine($"{DateTime.Now:HH:mm:ss} {text}");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    AppendLog($"解析ログ書き込みエラー: {ex.Message}");
-                }
+                AppendToAnalysisLog(text);
             }
         });
     }
@@ -690,38 +612,184 @@ public partial class MainWindow : Window
         });
     }
 
-    /// <summary>
-    /// 録音を開始し、必要に応じて解析ログファイルを初期化する
-    /// </summary>
-    private async void StartRecording()
+    private async Task StartCaptureSessionAsync()
     {
-        recorder.Start();
-        await recognizer.StartCaptureAsync();
-
-        if (isTextLoggingEnabled)
+        if (recognizer == null)
         {
-            string saveDirectory = configuration["RecordingSettings:SavePath"] ?? "data";
-            if (!Directory.Exists(saveDirectory))
-            {
-                Directory.CreateDirectory(saveDirectory);
-            }
+            MessageBox.Show("音声認識エンジンの初期化に失敗しています。", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+            ToggleCaptureButton.IsChecked = false;
+            return;
+        }
 
-            string timestamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
-            analysisLogFilePath = Path.Combine(saveDirectory, $"{timestamp}.txt");
+        if (!TryApplySelectedInputSource())
+        {
+            ToggleCaptureButton.IsChecked = false;
+            return;
+        }
 
-            using (StreamWriter sw = new StreamWriter(analysisLogFilePath, false, Encoding.UTF8))
-            {
-                sw.WriteLine($"解析ログ開始: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-            }
+        AppendLog("音声キャプチャ開始");
+        SetCaptureUiState(isCapturing: true);
+        ResetAnalysisLogFile();
+        await recognizer.StartCaptureAsync();
+        StartRecordingIfEnabled();
+    }
+
+    private async Task StopCaptureSessionAsync()
+    {
+        AppendLog("音声キャプチャ停止");
+        SetCaptureUiState(isCapturing: false);
+
+        if (recognizer != null)
+        {
+            await recognizer.StopCaptureAsync();
+        }
+
+        StopRecordingIfEnabled();
+        ExportAnalysisLogIfEnabled();
+    }
+
+    private bool TryApplySelectedInputSource()
+    {
+        if (recognizer == null)
+        {
+            return false;
+        }
+
+        var selectedWrapper = MicDeviceComboBox.SelectedItem as MMDeviceWrapper;
+        if (selectedWrapper == null)
+        {
+            MessageBox.Show("入力デバイスが選択されていません。", "エラー", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return false;
+        }
+
+        if (selectedWrapper.Device == null)
+        {
+            recognizer.InputSource = CaptureSource.Loopback;
+            recognizer.SelectedMicrophone = null;
+            return true;
+        }
+
+        recognizer.InputSource = CaptureSource.Microphone;
+        recognizer.SelectedMicrophone = selectedWrapper.Device;
+        return true;
+    }
+
+    private void SetCaptureUiState(bool isCapturing)
+    {
+        ToggleCaptureButton.Content = isCapturing ? "解析停止" : "解析開始";
+        PartialTextBlock.Text = isCapturing ? "(音声認識中...)" : "---";
+        RecognizerComboBox.IsEnabled = !isCapturing;
+        MicDeviceComboBox.IsEnabled = !isCapturing;
+
+        if (!isCapturing)
+        {
+            return;
+        }
+
+        recognizedTextItems.Clear();
+        TokenCountLabel.Content = "トークン数: 0";
+        AiResultBox.Text = "";
+    }
+
+    private void StartRecordingIfEnabled()
+    {
+        if (!isRecordingEnabled)
+        {
+            return;
+        }
+
+        recorder.Start();
+    }
+
+    private void StopRecordingIfEnabled()
+    {
+        if (!isRecordingEnabled)
+        {
+            return;
+        }
+
+        recorder.Stop();
+    }
+
+    private void ResetAnalysisLogFile()
+    {
+        string analysisFilePath = GetAnalysisFilePath();
+        if (!File.Exists(analysisFilePath))
+        {
+            return;
+        }
+
+        try
+        {
+            File.Delete(analysisFilePath);
+        }
+        catch (Exception ex)
+        {
+            AppendLog($"開始時の analysis.txt 削除エラー: {ex.Message}");
         }
     }
 
-    /// <summary>
-    /// 録音を停止する
-    /// </summary>
-    private async void StopRecording()
+    private void AppendToAnalysisLog(string text)
     {
-        recorder.Stop();
+        try
+        {
+            using StreamWriter sw = new StreamWriter(GetAnalysisFilePath(), true, Encoding.UTF8);
+            sw.WriteLine($"{DateTime.Now:HH:mm:ss} {text}");
+        }
+        catch (Exception ex)
+        {
+            AppendLog($"解析ログ書き込みエラー: {ex.Message}");
+        }
+    }
+
+    private void ExportAnalysisLogIfEnabled()
+    {
+        if (!isTextLoggingEnabled)
+        {
+            return;
+        }
+
+        string analysisFilePath = GetAnalysisFilePath();
+        if (!File.Exists(analysisFilePath))
+        {
+            return;
+        }
+
+        string saveDirectory = GetSaveDirectory();
+        string formattedFilePath = Path.Combine(saveDirectory, $"analysis_{DateTime.Now:yyyyMMdd-HHmmss}.txt");
+
+        try
+        {
+            string content = File.ReadAllText(analysisFilePath);
+            using StreamWriter sw = new StreamWriter(formattedFilePath, false, Encoding.UTF8);
+            sw.WriteLine(content);
+            AppendLog($"{formattedFilePath} に保存しました");
+        }
+        catch (Exception ex)
+        {
+            AppendLog($"解析ログフォーマットエラー: {ex.Message}");
+        }
+    }
+
+    private string GetAnalysisFilePath()
+    {
+        return Path.Combine(GetSaveDirectory(), "analysis.txt");
+    }
+
+    private string GetSaveDirectory()
+    {
+        string saveDirectory = configuration["RecordingSettings:SavePath"] ?? "data";
+        if (!Path.IsPathRooted(saveDirectory))
+        {
+            saveDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, saveDirectory);
+        }
+
+        if (!Directory.Exists(saveDirectory))
+        {
+            Directory.CreateDirectory(saveDirectory);
+        }
+
+        return saveDirectory;
     }
 
     /// <summary>

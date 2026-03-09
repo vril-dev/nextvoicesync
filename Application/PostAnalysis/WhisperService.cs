@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Configuration;
-using NextVoiceSync.Libs.Ai;
 using System;
 using System.IO;
 using System.Collections.Generic;
@@ -8,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
 
-namespace NextVoiceSync.Libs.PostAnalysis
+namespace NextVoiceSync.Application.PostAnalysis
 {
     /// <summary>
     /// whisper-cli.exe を使用して録音済み音声ファイルを解析する非同期サービス。

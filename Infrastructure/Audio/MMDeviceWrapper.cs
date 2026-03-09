@@ -1,6 +1,6 @@
 ﻿using NAudio.CoreAudioApi;
 
-namespace NextVoiceSync.Libs.Audio
+namespace NextVoiceSync.Infrastructure.Audio
 {
     /// <summary>
     /// マイクデバイスをUIで選択するためのラッパークラス。
