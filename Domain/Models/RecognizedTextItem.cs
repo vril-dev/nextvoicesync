@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NextVoiceSync.Libs.Models
+namespace NextVoiceSync.Domain.Models
 {
     /// <summary>
     /// 音声認識結果のデータモデル

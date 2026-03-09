@@ -4,7 +4,7 @@ using NAudio.CoreAudioApi;
 using NAudio.Wave;
 using Microsoft.Extensions.Configuration;
 
-namespace NextVoiceSync.Libs.Recognizers
+namespace NextVoiceSync.Infrastructure.Recognizers
 {
     /// <summary>
     /// Google Cloud Speech-to-Text を使用した音声認識クラス。

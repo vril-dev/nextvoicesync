@@ -1,6 +1,6 @@
 ﻿using NAudio.CoreAudioApi;
 
-namespace NextVoiceSync.Libs.Recognizers
+namespace NextVoiceSync.Infrastructure.Recognizers
 {
     /// <summary>
     /// 音声入力ソースの種類を定義する列挙型。

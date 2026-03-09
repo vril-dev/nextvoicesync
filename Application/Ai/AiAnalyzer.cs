@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using NextVoiceSync.Infrastructure.Ai;
 
-namespace NextVoiceSync.Libs.Ai
+namespace NextVoiceSync.Application.Ai
 {
     /// <summary>
     /// AI プロバイダーを管理し、テキスト解析を実行するクラス。

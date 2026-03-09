@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NextVoiceSync.Libs.PostAnalysis
+namespace NextVoiceSync.Application.PostAnalysis
 {
     /// <summary>
     /// 録音済み音声ファイルに対して後処理を行う解析サービスの共通インターフェース。

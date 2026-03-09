@@ -6,8 +6,9 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.ML.Tokenizers;
+using NextVoiceSync.Application.Ai;
 
-namespace NextVoiceSync.Libs.Ai
+namespace NextVoiceSync.Infrastructure.Ai
 {
     /// <summary>
     /// OpenAI API を利用してテキスト解析を行うクラス。
